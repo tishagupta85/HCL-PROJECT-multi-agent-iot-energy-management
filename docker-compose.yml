@@ -1,0 +1,49 @@
+﻿version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: iot_energy_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: iot_energy
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: iot_energy_backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/iot_energy
+      - SIMULATOR_ENABLED=True
+      - SIMULATOR_INTERVAL_SECONDS=2.0
+      - TARIFF_PEAK_RATE=0.28
+      - TARIFF_OFF_PEAK_RATE=0.12
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: iot_energy_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
