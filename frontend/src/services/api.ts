@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Device,
   IoTReading,
   LiveAggregate,
@@ -14,7 +14,11 @@
   ReportSummary,
 } from "../types"
 
-const API_BASE = "/api"
+// In production (Vercel), VITE_API_BASE_URL points to the Render.com backend.
+// In local dev, it falls back to "/api" which is proxied by Vite to localhost:8000.
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api`
+  : "/api"
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {

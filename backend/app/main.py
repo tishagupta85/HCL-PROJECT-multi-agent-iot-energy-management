@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -101,3 +101,8 @@ def root():
         "version": "1.0.0",
         "docs_url": "/docs",
     }
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Render.com and monitoring."""
+    return {"status": "healthy", "service": "iot-energy-backend"}

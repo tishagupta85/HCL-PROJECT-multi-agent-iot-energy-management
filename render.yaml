@@ -1,0 +1,17 @@
+services:
+  # ── FastAPI Backend on Render (free tier) ─────────────────────────────────
+  - type: web
+    name: iot-energy-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        value: sqlite:///./iot_energy.db
+    healthCheckPath: /health
+    autoDeploy: true
