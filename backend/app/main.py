@@ -1,4 +1,5 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,8 +24,14 @@ from routers import (
     reports,
 )
 
+# Detect if running on Vercel serverless (no persistent background tasks)
+IS_VERCEL = os.environ.get("VERCEL") == "1"
+
 async def background_simulation_loop():
-    """Background task that runs the IoT simulator every interval."""
+    """Background task that runs the IoT simulator every interval.
+    Only runs in local / long-lived server environments (not Vercel serverless).
+    On Vercel, use POST /api/simulator/tick to advance the simulation manually.
+    """
     print("[SIMULATOR] Starting background IoT simulation loop...")
     while True:
         try:
@@ -48,22 +55,27 @@ async def lifespan(app: FastAPI):
     # Startup: ensure tables and seed baseline data
     print("[STARTUP] Initializing database tables...")
     Base.metadata.create_all(bind=engine)
-    
+
     db = SessionLocal()
     try:
         seed_database(db)
     finally:
         db.close()
 
-    # Start background simulator task
-    sim_task = asyncio.create_task(background_simulation_loop())
-    yield
-    # Shutdown
-    sim_task.cancel()
-    try:
-        await sim_task
-    except asyncio.CancelledError:
-        pass
+    if IS_VERCEL:
+        # Vercel serverless: no background loop; simulator runs on-demand via /api/simulator/tick
+        print("[STARTUP] Running on Vercel — background simulation loop disabled (use /api/simulator/tick).")
+        yield
+    else:
+        # Local / Docker: start continuous background simulation loop
+        sim_task = asyncio.create_task(background_simulation_loop())
+        yield
+        sim_task.cancel()
+        try:
+            await sim_task
+        except asyncio.CancelledError:
+            pass
+
     print("[SHUTDOWN] Backend stopped cleanly.")
 
 app = FastAPI(

@@ -14,11 +14,10 @@ import type {
   ReportSummary,
 } from "../types"
 
-// In production (Vercel), VITE_API_BASE_URL points to the Render.com backend.
-// In local dev, it falls back to "/api" which is proxied by Vite to localhost:8000.
-const API_BASE = import.meta.env.VITE_API_BASE_URL
-  ? `${import.meta.env.VITE_API_BASE_URL}/api`
-  : "/api"
+// Both frontend and backend are deployed on the same Vercel project.
+// In dev: Vite proxy forwards /api → localhost:8000
+// In production (Vercel): root vercel.json rewrites /api/* → backend service
+const API_BASE = "/api"
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
